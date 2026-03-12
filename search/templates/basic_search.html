@@ -1,0 +1,9 @@
+{% if wiki %}
+    <ul>
+    {% for w in wiki %}
+        <li><a href="{% url 'get_wiki' w.id %}">{{ w.title }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No polls are available.</p>
+{% endif %}

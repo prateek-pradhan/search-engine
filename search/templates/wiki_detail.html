@@ -1,0 +1,6 @@
+{% if wiki %}
+    <h1>{{ wiki.title }}</h1>
+    <p>{{ wiki.content }}</p>
+{% else %}
+    <p>No data found for the given title.</p>
+{% endif %}
