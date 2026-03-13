@@ -18,17 +18,20 @@ def tokenized_query(request, title):
     for token in tokens:
         normalized_token = normalize_token(token)
 
-        token_data = InvertedIndex.objects.get(token=normalized_token)
+        token_data = InvertedIndex.objects.filter(token=normalized_token).first()
+        if token_data is None:
+            wiki_list = set()
+            break   
         wiki_ids = token_data.wiki
-        wiki = WikiData.objects.filter(id__in=wiki_ids)
-        print(wiki)
         if wiki_list:
-            wiki_list = wiki_list.intersection(set(wiki))
+            wiki_list = wiki_list.intersection(set(wiki_ids))
         else:
-            wiki_list = set(wiki)
-    if not wiki_list:
+            wiki_list = set(wiki_ids)
+    wiki = WikiData.objects.filter(id__in=list(wiki_list))
+    print(wiki)
+    if not wiki:
         return HttpResponse("No results found.")
-    return render(request, 'basic_search.html', {'wiki': list(wiki_list)})        
+    return render(request, 'basic_search.html', {'wiki': list(wiki)})        
 
     
 
