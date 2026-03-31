@@ -6,7 +6,6 @@ from search.models import InvertedIndex
 def tokenized_query(request):
     query = request.GET.get('query', '')
     
-    print(f"Received query: {query}")
     if not query:
         return render(request, 'search_page.html')
     
@@ -26,13 +25,9 @@ def tokenized_query(request):
 
     for wiki_token in token_data:
         for wiki_id, rank in wiki_token.wiki.items():
-            if wiki_id not in wiki_map:
-                wiki_map[wiki_id] = rank
-            else:
-                wiki_map[wiki_id] += rank
+            wiki_map[wiki_id] = wiki_map.get(wiki_id, 0) + rank
     
-    wiki_list = [wiki_id for wiki_id, rank in wiki_map.items()]
-    wiki = WikiData.objects.filter(id__in=wiki_list)
+    wiki = WikiData.objects.filter(id__in=wiki_map.keys()).only('id', 'title')
 
     if not wiki:
         return render(request, 'search_page.html', {'query': query, "error_message": "No results found."})
