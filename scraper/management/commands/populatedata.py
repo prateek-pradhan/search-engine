@@ -9,7 +9,6 @@ class Command(BaseCommand):
 
     BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-
     def handle(self, *args, **options):
         wiki = []
         for event, element in ET.iterparse(self.BASE_DIR / 'assets' / 'wikipedia.xml', events=('end',)):

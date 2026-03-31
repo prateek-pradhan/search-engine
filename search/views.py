@@ -1,41 +1,47 @@
 from django.shortcuts import render, get_object_or_404
 from scraper.models import WikiData
-from django.http import HttpResponse
 from search.services import normalize_token
 from search.models import InvertedIndex
 
-# Create your views here.
-def basic_search(request, title):
-    wiki = WikiData.objects.filter(title__icontains=title)
-    if not wiki.exists():
-        return HttpResponse("No results found.")
+def tokenized_query(request):
+    query = request.GET.get('query', '')
+    
+    print(f"Received query: {query}")
+    if not query:
+        return render(request, 'search_page.html')
+    
+    tokens = query.split()
+    wiki_map = dict()
 
-    return render(request, 'basic_search.html', {'wiki': wiki})
-
-def tokenized_query(request, title):
-    tokens = title.split()
-    wiki_list = set()
+    normalized_tokens = []
     for token in tokens:
         normalized_token = normalize_token(token)
+        if normalized_token:
+            normalized_tokens.append(normalized_token)
 
-        token_data = InvertedIndex.objects.filter(token=normalized_token).first()
-        if token_data is None:
-            wiki_list = set()
-            break   
-        wiki_ids = token_data.wiki
-        if wiki_list:
-            wiki_list = wiki_list.intersection(set(wiki_ids))
-        else:
-            wiki_list = set(wiki_ids)
-    wiki = WikiData.objects.filter(id__in=list(wiki_list))
-    print(wiki)
+    token_data = InvertedIndex.objects.filter(token__in=normalized_tokens)
+
+    if not token_data:
+        return render(request, 'search_page.html', {'query': query, "error_message": "No results found."})
+
+    for wiki_token in token_data:
+        for wiki_id, rank in wiki_token.wiki.items():
+            if wiki_id not in wiki_map:
+                wiki_map[wiki_id] = rank
+            else:
+                wiki_map[wiki_id] += rank
+    
+    wiki_list = [wiki_id for wiki_id, rank in wiki_map.items()]
+    wiki = WikiData.objects.filter(id__in=wiki_list)
+
     if not wiki:
-        return HttpResponse("No results found.")
-    return render(request, 'basic_search.html', {'wiki': list(wiki)})        
+        return render(request, 'search_page.html', {'query': query, "error_message": "No results found."})
+    
+    sorted_wiki = sorted(wiki, key=lambda w: int(wiki_map[str(w.id)]), reverse=True)
+    return render(request, 'search_page.html', {'wiki': sorted_wiki, 'query': query})        
 
     
 
 def get_wiki(request, id):
     wiki = get_object_or_404(WikiData, id=id)
-    print(wiki)
     return render(request, 'wiki_detail.html', {'wiki': wiki})

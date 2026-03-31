@@ -1,0 +1,15 @@
+<form>
+    <input type="text" name="query" placeholder="Enter your search query" value="{{ query }}">
+    <button type="submit">Search</button>
+</form>
+{% if wiki %} 
+        <ul>
+            {% for item in wiki %}
+                <li><a href="{% url 'get_wiki' item.id %}">{{ item.title }}</a></li>
+            {% endfor %}
+        </ul>
+{% endif %}
+{% if error_message %}
+    <p>{{ error_message }}</p>
+{% endif %}
+
